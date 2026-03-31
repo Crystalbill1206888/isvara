@@ -1,121 +1,486 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Assistant</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-#hdr{padding:12px 20px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-#hdr h1{font-size:17px;font-weight:700;color:#a78bfa}
-.hr{display:flex;gap:8px;align-items:center}
-select,#clr{background:#2a2a2a;border:1px solid #3a3a3a;color:#ccc;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
-#msgs{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
-#msgs::-webkit-scrollbar{width:4px}#msgs::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
-.row{display:flex;gap:10px;max-width:860px;width:100%;margin:0 auto}
-.row.u{flex-direction:row-reverse}
-.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:#2a2a3a;color:#fff}
-.bbl{max-width:82%;padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.7;word-break:break-word}
-.row.u .bbl{background:#252535}.row.a .bbl{background:#1c1c2c}
-.bbl pre{background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:10px;overflow-x:auto;margin:6px 0}
-.bbl code{font-size:12px;font-family:monospace}
-.bbl p{margin:3px 0}.bbl ul,.bbl ol{padding-left:18px}
-.bbl h1,.bbl h2,.bbl h3{color:#b0b0ff;margin:6px 0 3px}
-.bbl table{border-collapse:collapse;width:100%;margin:6px 0}
-.bbl th,.bbl td{border:1px solid #333;padding:5px 8px;font-size:13px}
-.bbl th{background:#252535}
-.tc{background:#0a1a0a;border:1px solid #1a3a1a;border-radius:6px;padding:6px 10px;margin:4px 0;font-size:12px;color:#4ade80}
-.fp{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:6px;padding:6px 10px;margin:4px 0;font-size:12px;color:#a0a0ff}
-.dots{display:flex;gap:4px;align-items:center;padding:6px 0}
-.dot{width:5px;height:5px;border-radius:50%;background:#667eea;animation:bop 1.2s infinite}
-.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
-@keyframes bop{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
-#ia{padding:12px 20px;background:#1a1a1a;border-top:1px solid #2a2a2a;flex-shrink:0}
-#iw{max-width:860px;margin:0 auto;background:#252525;border:1px solid #333;border-radius:10px;overflow:hidden}
-#iw:focus-within{border-color:#667eea}
-#fb{display:none;padding:6px 12px;background:#1c1c2c;border-bottom:1px solid #333;font-size:12px;color:#a0a0ff;align-items:center;gap:8px}
-#fb.on{display:flex}
-#ir{display:flex;align-items:flex-end;gap:6px;padding:6px 10px}
-#ub,#ab{background:none;border:1px solid #444;color:#888;cursor:pointer;font-size:12px;padding:3px 8px;border-radius:5px;flex-shrink:0}
-#ub{color:#667eea;border-color:#667eea}
-#ab.on{color:#4ade80;border-color:#4ade80}
-#ti{flex:1;background:none;border:none;color:#e0e0e0;font-size:14px;resize:none;outline:none;max-height:100px;min-height:22px;line-height:1.6;font-family:inherit}
-#sb{background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;padding:6px 16px;border-radius:7px;cursor:pointer;font-size:14px;flex-shrink:0}
-#sb:disabled{opacity:.35;cursor:not-allowed}
-#fi{display:none}
-.sys{text-align:center;font-size:11px;color:#444;padding:3px 0}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 三模型辩论系统 - isvara</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .control-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-area {
+            margin-bottom: 30px;
+        }
+
+        .input-area label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-clear {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-clear:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f0f0f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .result-section {
+            margin-bottom: 30px;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .model-result {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .model-result:hover {
+            background: #f0f0f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .model-result.collapsed .content {
+            display: none;
+        }
+
+        .model-result .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .model-result .header .toggle {
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .model-result .content {
+            color: #555;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .final-answer {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .final-answer .title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .final-answer .content {
+            color: #555;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .error {
+            background: #fee;
+            border-left: 4px solid #f44;
+            padding: 15px;
+            border-radius: 4px;
+            color: #c33;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-<div id="hdr">
-  <h1>🤖 AI Assistant</h1>
-  <div class="hr">
-    <select id="ms"><option value="auto">自动</option><option value="qwen">千问</option><option value="sf">硅基</option></select>
-    <button id="clr" onclick="clr()">清空</button>
-  </div>
-</div>
-<div id="msgs"><div class="sys">就绪 · 多轮对话 · 文件分析 · Agent工具</div></div>
-<div id="ia"><div id="iw">
-  <div id="fb"><span>📎</span><span id="fn"></span><span style="cursor:pointer;color:#f87171" onclick="rf()">×</span></div>
-  <div id="ir">
-    <button id="ub" onclick="document.getElementById('fi').click()">📎上传</button>
-    <button id="ab" onclick="ta()">Agent</button>
-    <textarea id="ti" placeholder="输入消息，Enter发送，Shift+Enter换行" rows="1"></textarea>
-    <button id="sb" onclick="send()">发送</button>
-  </div>
-</div></div>
-<input type="file" id="fi" onchange="of(this)">
-<script>
-// ⚠️ 把下面这行改成你的 ai-model 函数URL
-var API = 'https://1354698699-21m65ka643.ap-guangzhou.tencentscf.com';
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI 三模型辩论系统</h1>
+            <p>三个 AI 模型并行作答、互相核验、综合分析</p>
+        </div>
 
-var msgs=[],fd=null,fn=null,ag=false,busy=false;
-var M=document.getElementById('msgs'),T=document.getElementById('ti'),S=document.getElementById('sb');
-T.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
-T.addEventListener('input',function(){T.style.height='auto';T.style.height=Math.min(T.scrollHeight,100)+'px';});
-function ta(){ag=!ag;var b=document.getElementById('ab');b.classList.toggle('on',ag);b.textContent=ag?'Agent ON':'Agent';}
-function clr(){msgs=[];M.innerHTML='<div class="sys">已清空</div>';}
-function rf(){fd=null;fn=null;document.getElementById('fb').classList.remove('on');document.getElementById('fi').value='';}
-function of(i){var f=i.files[0];if(!f)return;if(f.size>10485760){alert('最大10MB');return;}fn=f.name;var r=new FileReader();r.onload=function(e){fd=e.target.result.split(',')[1];document.getElementById('fn').textContent=fn;document.getElementById('fb').classList.add('on');};r.readAsDataURL(f);}
-function am(role,text,extra){
-  var d=document.createElement('div');d.className='row '+(role==='user'?'u':'a');
-  var av=document.createElement('div');av.className='av';av.textContent=role==='user'?'U':'AI';
-  var b=document.createElement('div');b.className='bbl';
-  if(extra&&extra.fi){var p=document.createElement('div');p.className='fp';p.textContent='📎 '+extra.fi.filename+' - '+(extra.fi.info||'');b.appendChild(p);}
-  if(extra&&extra.steps&&extra.steps.length){extra.steps.forEach(function(s){var t=document.createElement('div');t.className='tc';t.textContent='🔧 '+s.tool+': '+JSON.stringify(s.args)+' → '+String(s.result).slice(0,200);b.appendChild(t);});}
-  var c=document.createElement('div');
-  try{c.innerHTML=typeof marked!=='undefined'?marked.parse(text||''):(text||'').replace(/\n/g,'<br>');}
-  catch(e){c.textContent=text||'';}
-  b.appendChild(c);d.appendChild(av);d.appendChild(b);M.appendChild(d);M.scrollTop=M.scrollHeight;
-}
-function ath(){var d=document.createElement('div');d.className='row a';d.id='thk';d.innerHTML='<div class="av">AI</div><div class="bbl"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';M.appendChild(d);M.scrollTop=M.scrollHeight;}
-function rth(){var t=document.getElementById('thk');if(t)t.remove();}
-function send(){
-  if(busy)return;var txt=T.value.trim();if(!txt&&!fd)return;
-  busy=true;S.disabled=true;T.value='';T.style.height='auto';
-  am('user',txt||(fd?'📎 '+fn:''));ath();
-  var model=document.getElementById('ms').value;
-  var body={messages:msgs,model:model};
-  if(fd){body.action='file';body.file_data=fd;body.filename=fn;body.question=txt||'请分析这个文件';rf();}
-  else if(ag){body.action='agent';body.goal=txt;}
-  else{body.action='chat';body.message=txt;}
-  fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-  .then(function(r){return r.json();})
-  .then(function(data){
-    rth();
-    if(data.error){am('ai','❌ '+data.error);}
-    else{
-      var ans=data.answer||data.message||'';
-      am('ai',ans,{fi:data.file_info,steps:data.steps});
-      if(data.messages)msgs=data.messages;
-      else{if(txt)msgs.push({role:'user',content:txt});msgs.push({role:'assistant',content:ans});}
-    }
-    busy=false;S.disabled=false;T.focus();
-  })
-  .catch(function(e){rth();am('ai','❌ 请求失败: '+e.message);busy=false;S.disabled=false;});
-}
-</script>
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="temperatureInput">温度 (0.0-1.0)</label>
+                <input type="number" id="temperatureInput" min="0" max="1" step="0.1" value="0.7">
+            </div>
+        </div>
+
+        <div class="input-area">
+            <label for="questionInput">输入您的问题</label>
+            <textarea id="questionInput" placeholder="请输入您想要 AI 回答的问题..."></textarea>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-submit" id="submitBtn">提交问题</button>
+            <button class="btn-clear" id="clearBtn">清空</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在处理中，请稍候...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div id="messageContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://1354698699-21m65ka643.ap-guangzhou.tencentscf.com';
+        
+        const elements = {
+            temperatureInput: document.getElementById('temperatureInput'),
+            questionInput: document.getElementById('questionInput'),
+            submitBtn: document.getElementById('submitBtn'),
+            clearBtn: document.getElementById('clearBtn'),
+            loading: document.getElementById('loading'),
+            results: document.getElementById('results'),
+            messageContainer: document.getElementById('messageContainer')
+        };
+
+        elements.clearBtn.addEventListener('click', () => {
+            elements.questionInput.value = '';
+            elements.results.style.display = 'none';
+            elements.messageContainer.innerHTML = '';
+        });
+
+        elements.submitBtn.addEventListener('click', async () => {
+            const question = elements.questionInput.value.trim();
+            if (!question) {
+                alert('请输入问题');
+                return;
+            }
+
+            const temperature = parseFloat(elements.temperatureInput.value);
+
+            await submitQuestion(question, temperature);
+        });
+
+        elements.questionInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                elements.submitBtn.click();
+            }
+        });
+
+        async function submitQuestion(question, temperature) {
+            elements.submitBtn.disabled = true;
+            elements.loading.style.display = 'block';
+            elements.results.style.display = 'none';
+            elements.messageContainer.innerHTML = '';
+
+            try {
+                const payload = {
+                    body: JSON.stringify({
+                        goal: question,
+                        model: 'debate',
+                        temperature: temperature,
+                        agent: false,
+                        messages: [],
+                        use_tools: false
+                    })
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                displayError(`请求失败: ${error.message}`);
+            } finally {
+                elements.submitBtn.disabled = false;
+                elements.loading.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            elements.results.style.display = 'block';
+            let html = '';
+
+            if (data.debate_results) {
+                const results = data.debate_results;
+
+                html += '<div class="result-section">';
+                html += '<div class="result-title">📝 第一轮：三模型原始答案</div>';
+
+                if (results.round1) {
+                    ['qwen', 'deepseek', 'hunyuan'].forEach(modelKey => {
+                        const modelName = {
+                            'qwen': '千问 (Qwen-Plus)',
+                            'deepseek': '硅基 · DeepSeek-V3',
+                            'hunyuan': '硅基 · 混元'
+                        }[modelKey];
+
+                        html += `
+                            <div class="model-result" onclick="toggleResult(this)">
+                                <div class="header">
+                                    <span>${modelName}</span>
+                                    <span class="toggle">▼ 展开</span>
+                                </div>
+                                <div class="content">${escapeHtml(results.round1[modelKey] || '(无回复)')}</div>
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+
+                html += '<div class="result-section">';
+                html += '<div class="result-title">🔍 第二轮：三模型互相核验</div>';
+
+                if (results.round2) {
+                    ['qwen', 'deepseek', 'hunyuan'].forEach(modelKey => {
+                        const modelName = {
+                            'qwen': '千问 (Qwen-Plus)',
+                            'deepseek': '硅基 · DeepSeek-V3',
+                            'hunyuan': '硅基 · 混元'
+                        }[modelKey];
+
+                        html += `
+                            <div class="model-result" onclick="toggleResult(this)">
+                                <div class="header">
+                                    <span>${modelName} 的核验意见</span>
+                                    <span class="toggle">▼ 展开</span>
+                                </div>
+                                <div class="content">${escapeHtml(results.round2[modelKey] || '(无回复)')}</div>
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+
+                if (results.final_answer) {
+                    html += `
+                        <div class="final-answer">
+                            <div class="title">✨ 最终综合答案 (DeepSeek 综合)</div>
+                            <div class="content">${escapeHtml(results.final_answer)}</div>
+                        </div>
+                    `;
+                }
+            } else {
+                displayError('未收到辩论结果');
+                return;
+            }
+
+            elements.messageContainer.innerHTML = html;
+        }
+
+        function displayError(message) {
+            elements.results.style.display = 'block';
+            elements.messageContainer.innerHTML = `<div class="error">❌ ${escapeHtml(message)}</div>`;
+        }
+
+        function toggleResult(element) {
+            element.classList.toggle('collapsed');
+            const toggle = element.querySelector('.toggle');
+            if (element.classList.contains('collapsed')) {
+                toggle.textContent = '▶ 展开';
+            } else {
+                toggle.textContent = '▼ 收起';
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
 </body>
 </html>
