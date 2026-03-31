@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Assistant</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#hdr{padding:12px 20px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#hdr h1{font-size:17px;font-weight:700;color:#a78bfa}
+.hr{display:flex;gap:8px;align-items:center}
+select,#clr{background:#2a2a2a;border:1px solid #3a3a3a;color:#ccc;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
+#msgs{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+#msgs::-webkit-scrollbar{width:4px}#msgs::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.row{display:flex;gap:10px;max-width:860px;width:100%;margin:0 auto}
+.row.u{flex-direction:row-reverse}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:#2a2a3a;color:#fff}
+.bbl{max-width:82%;padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.7;word-break:break-word}
+.row.u .bbl{background:#252535}.row.a .bbl{background:#1c1c2c}
+.bbl pre{background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:10px;overflow-x:auto;margin:6px 0}
+.bbl code{font-size:12px;font-family:monospace}
+.bbl p{margin:3px 0}.bbl ul,.bbl ol{padding-left:18px}
+.bbl h1,.bbl h2,.bbl h3{color:#b0b0ff;margin:6px 0 3px}
+.bbl table{border-collapse:collapse;width:100%;margin:6px 0}
+.bbl th,.bbl td{border:1px solid #333;padding:5px 8px;font-size:13px}
+.bbl th{background:#252535}
+.tc{background:#0a1a0a;border:1px solid #1a3a1a;border-radius:6px;padding:6px 10px;margin:4px 0;font-size:12px;color:#4ade80}
+.fp{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:6px;padding:6px 10px;margin:4px 0;font-size:12px;color:#a0a0ff}
+.dots{display:flex;gap:4px;align-items:center;padding:6px 0}
+.dot{width:5px;height:5px;border-radius:50%;background:#667eea;animation:bop 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bop{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+#ia{padding:12px 20px;background:#1a1a1a;border-top:1px solid #2a2a2a;flex-shrink:0}
+#iw{max-width:860px;margin:0 auto;background:#252525;border:1px solid #333;border-radius:10px;overflow:hidden}
+#iw:focus-within{border-color:#667eea}
+#fb{display:none;padding:6px 12px;background:#1c1c2c;border-bottom:1px solid #333;font-size:12px;color:#a0a0ff;align-items:center;gap:8px}
+#fb.on{display:flex}
+#ir{display:flex;align-items:flex-end;gap:6px;padding:6px 10px}
+#ub,#ab{background:none;border:1px solid #444;color:#888;cursor:pointer;font-size:12px;padding:3px 8px;border-radius:5px;flex-shrink:0}
+#ub{color:#667eea;border-color:#667eea}
+#ab.on{color:#4ade80;border-color:#4ade80}
+#ti{flex:1;background:none;border:none;color:#e0e0e0;font-size:14px;resize:none;outline:none;max-height:100px;min-height:22px;line-height:1.6;font-family:inherit}
+#sb{background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;padding:6px 16px;border-radius:7px;cursor:pointer;font-size:14px;flex-shrink:0}
+#sb:disabled{opacity:.35;cursor:not-allowed}
+#fi{display:none}
+.sys{text-align:center;font-size:11px;color:#444;padding:3px 0}
+</style>
+</head>
+<body>
+<div id="hdr">
+  <h1>🤖 AI Assistant</h1>
+  <div class="hr">
+    <select id="ms"><option value="auto">自动</option><option value="qwen">千问</option><option value="sf">硅基</option></select>
+    <button id="clr" onclick="clr()">清空</button>
+  </div>
+</div>
+<div id="msgs"><div class="sys">就绪 · 多轮对话 · 文件分析 · Agent工具</div></div>
+<div id="ia"><div id="iw">
+  <div id="fb"><span>📎</span><span id="fn"></span><span style="cursor:pointer;color:#f87171" onclick="rf()">×</span></div>
+  <div id="ir">
+    <button id="ub" onclick="document.getElementById('fi').click()">📎上传</button>
+    <button id="ab" onclick="ta()">Agent</button>
+    <textarea id="ti" placeholder="输入消息，Enter发送，Shift+Enter换行" rows="1"></textarea>
+    <button id="sb" onclick="send()">发送</button>
+  </div>
+</div></div>
+<input type="file" id="fi" onchange="of(this)">
+<script>
+// ⚠️ 把下面这行改成你的 ai-model 函数URL
+var API = 'https://1354698699-21m65ka643.ap-guangzhou.tencentscf.com';
+
+var msgs=[],fd=null,fn=null,ag=false,busy=false;
+var M=document.getElementById('msgs'),T=document.getElementById('ti'),S=document.getElementById('sb');
+T.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+T.addEventListener('input',function(){T.style.height='auto';T.style.height=Math.min(T.scrollHeight,100)+'px';});
+function ta(){ag=!ag;var b=document.getElementById('ab');b.classList.toggle('on',ag);b.textContent=ag?'Agent ON':'Agent';}
+function clr(){msgs=[];M.innerHTML='<div class="sys">已清空</div>';}
+function rf(){fd=null;fn=null;document.getElementById('fb').classList.remove('on');document.getElementById('fi').value='';}
+function of(i){var f=i.files[0];if(!f)return;if(f.size>10485760){alert('最大10MB');return;}fn=f.name;var r=new FileReader();r.onload=function(e){fd=e.target.result.split(',')[1];document.getElementById('fn').textContent=fn;document.getElementById('fb').classList.add('on');};r.readAsDataURL(f);}
+function am(role,text,extra){
+  var d=document.createElement('div');d.className='row '+(role==='user'?'u':'a');
+  var av=document.createElement('div');av.className='av';av.textContent=role==='user'?'U':'AI';
+  var b=document.createElement('div');b.className='bbl';
+  if(extra&&extra.fi){var p=document.createElement('div');p.className='fp';p.textContent='📎 '+extra.fi.filename+' - '+(extra.fi.info||'');b.appendChild(p);}
+  if(extra&&extra.steps&&extra.steps.length){extra.steps.forEach(function(s){var t=document.createElement('div');t.className='tc';t.textContent='🔧 '+s.tool+': '+JSON.stringify(s.args)+' → '+String(s.result).slice(0,200);b.appendChild(t);});}
+  var c=document.createElement('div');
+  try{c.innerHTML=typeof marked!=='undefined'?marked.parse(text||''):(text||'').replace(/\n/g,'<br>');}
+  catch(e){c.textContent=text||'';}
+  b.appendChild(c);d.appendChild(av);d.appendChild(b);M.appendChild(d);M.scrollTop=M.scrollHeight;
+}
+function ath(){var d=document.createElement('div');d.className='row a';d.id='thk';d.innerHTML='<div class="av">AI</div><div class="bbl"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';M.appendChild(d);M.scrollTop=M.scrollHeight;}
+function rth(){var t=document.getElementById('thk');if(t)t.remove();}
+function send(){
+  if(busy)return;var txt=T.value.trim();if(!txt&&!fd)return;
+  busy=true;S.disabled=true;T.value='';T.style.height='auto';
+  am('user',txt||(fd?'📎 '+fn:''));ath();
+  var model=document.getElementById('ms').value;
+  var body={messages:msgs,model:model};
+  if(fd){body.action='file';body.file_data=fd;body.filename=fn;body.question=txt||'请分析这个文件';rf();}
+  else if(ag){body.action='agent';body.goal=txt;}
+  else{body.action='chat';body.message=txt;}
+  fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    rth();
+    if(data.error){am('ai','❌ '+data.error);}
+    else{
+      var ans=data.answer||data.message||'';
+      am('ai',ans,{fi:data.file_info,steps:data.steps});
+      if(data.messages)msgs=data.messages;
+      else{if(txt)msgs.push({role:'user',content:txt});msgs.push({role:'assistant',content:ans});}
+    }
+    busy=false;S.disabled=false;T.focus();
+  })
+  .catch(function(e){rth();am('ai','❌ 请求失败: '+e.message);busy=false;S.disabled=false;});
+}
+</script>
+</body>
+</html>
